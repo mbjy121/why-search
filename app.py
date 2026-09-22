@@ -231,6 +231,70 @@ CSS = """
     animation: whyHeaderIn 0.4s ease both;
 }
 
+/* -------- "How it's built" video card (top-right of landing) -------- */
+.why-topbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 4px 0 4px;
+    animation: whyHeaderIn 0.5s ease both;
+}
+/* Style the underlying Streamlit button as a card. Streamlit adds
+   `st-key-<button_key>` to the element container; we target it. */
+.st-key-btn_how_built button {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 8px 16px 8px 8px !important;
+    border-radius: 999px !important;
+    border: 1px solid var(--why-card-bd) !important;
+    background: var(--why-bg) !important;
+    color: var(--why-fg) !important;
+    box-shadow: var(--why-shadow-card) !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+    width: auto !important;
+    min-height: 40px !important;
+    line-height: 1 !important;
+    float: right;
+}
+.st-key-btn_how_built button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--why-shadow-input-focus) !important;
+    border-color: rgba(66,133,244,0.5) !important;
+    color: var(--why-accent) !important;
+}
+/* Streamlit's button text lives inside <div class="stMarkdown"><p>...</p></div>.
+   We add the play-icon circle as ::before on the button itself. */
+.st-key-btn_how_built button::before {
+    content: "";
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background-image:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><polygon points='8,5 19,12 8,19'/></svg>"),
+        linear-gradient(135deg, #2563eb, #7c3aed);
+    background-repeat: no-repeat, no-repeat;
+    background-position: 60% center, 0 0;
+    background-size: 11px 11px, cover;
+    flex-shrink: 0;
+}
+.st-key-btn_how_built {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Video dialog frame */
+.why-video-dialog iframe {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    background: #000;
+}
+
 /* -------- Result cards -------- */
 .why-card {
     border: 1px solid var(--why-card-bd);
@@ -464,6 +528,24 @@ def _submit_query():
     state.query = state.get("_search_input", "").strip()
 
 
+VIDEO_URL = "https://whysearch-film.vercel.app"
+
+
+@st.dialog("How it's built", width="large")
+def _show_video_dialog():
+    """In-page modal showing the 'how it was built' walkthrough video."""
+    st.markdown('<div class="why-video-dialog">', unsafe_allow_html=True)
+    st.components.v1.iframe(VIDEO_URL, height=560, scrolling=True)
+    st.markdown(
+        f"<div style='margin-top:8px;color:var(--why-muted);font-size:0.8rem;'>"
+        f"Trouble loading the player? "
+        f"<a href='{VIDEO_URL}' target='_blank' rel='noopener'>Open in a new tab -></a>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 def _render_filter_popover(key: str):
     with st.popover("⚙", use_container_width=True, help="Filter and mode"):
         st.markdown("**Search mode**")
@@ -507,6 +589,14 @@ has_query = bool(state.query.strip())
 # Big hero — landing only
 # ---------------------------------------------------------------------------
 if not has_query:
+    # Top-right "How it's built" card. Sits above the hero, floats to the right.
+    st.markdown('<div class="why-topbar"><div class="why-video-slot">', unsafe_allow_html=True)
+    _tl, _tr = st.columns([5, 2])
+    with _tr:
+        if st.button("How it's built", key="btn_how_built", use_container_width=False):
+            _show_video_dialog()
+    st.markdown('</div></div>', unsafe_allow_html=True)
+
     st.markdown(
         '<div class="why-hero">'
         '<div class="why-brand"><em>WHY</em> search</div>'
