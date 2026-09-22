@@ -1,0 +1,5 @@
+scikit-learn>=1.4
+numpy>=1.26
+streamlit>=1.30
+certifi>=2024.2.2
+sentence-transformers>=2.7
