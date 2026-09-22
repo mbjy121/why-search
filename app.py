@@ -295,6 +295,55 @@ CSS = """
     background: #000;
 }
 
+/* -------- Clickable "WHY search" logo in the results header -------- */
+/* Streamlit button rendered to look exactly like the mini brand, using
+   two ::before / ::after pseudo-elements so the "WHY" can carry the
+   purple-blue gradient while "search" stays in the theme foreground. */
+.st-key-btn_home button {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 8px 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    display: inline-flex !important;
+    align-items: baseline !important;
+}
+.st-key-btn_home button p,
+.st-key-btn_home button > div {
+    display: none !important;
+}
+.st-key-btn_home button::before,
+.st-key-btn_home button::after {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    display: inline-block;
+    transition: opacity 0.15s ease;
+}
+.st-key-btn_home button::before {
+    content: "WHY";
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-right: 6px;
+}
+.st-key-btn_home button::after {
+    content: "search";
+    color: var(--why-fg);
+}
+.st-key-btn_home button:hover::before,
+.st-key-btn_home button:hover::after {
+    opacity: 0.7;
+}
+
 /* -------- Result cards -------- */
 .why-card {
     border: 1px solid var(--why-card-bd);
@@ -616,10 +665,17 @@ wrap_class = "why-searchwrap-results" if has_query else "why-searchwrap-landing"
 if has_query:
     c_brand, c_input, _c_pad = st.columns([2, 6, 1])
     with c_brand:
-        st.markdown(
-            '<div class="why-header-row"><div class="why-brand-mini"><em>WHY</em> search</div></div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown('<div class="why-header-row">', unsafe_allow_html=True)
+        # Clickable brand — resets to landing when pressed
+        if st.button(
+            "home",  # actual label is hidden; the styled ::before/::after paints the logo
+            key="btn_home",
+            help="Back to home",
+        ):
+            state.query = ""
+            state["_search_input"] = ""
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     input_container = c_input
     top_margin = "margin-top:14px;"
 else:
