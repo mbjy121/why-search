@@ -452,14 +452,16 @@ state.setdefault("query", "")
 state.setdefault("source_choice", "Both")
 state.setdefault("mode", DEFAULT_MODE)
 state.setdefault("top_k", 10)
+# Seed the input widget's own state so it renders with state.query when the
+# script is invoked mid-session (widget state is separate from state.query).
+state.setdefault("_search_input", state.query)
 
 
-def _submit_query_landing():
-    state.query = state.get("_input_landing", "").strip()
-
-
-def _submit_query_results():
-    state.query = state.get("_input_results", "").strip()
+def _submit_query():
+    """Fired when the search input loses focus (Tab or Enter).
+    Reads whatever is currently in the input widget and stores it as
+    state.query. Streamlit reruns automatically after this returns."""
+    state.query = state.get("_search_input", "").strip()
 
 
 def _render_filter_popover(key: str):
@@ -502,7 +504,7 @@ has_query = bool(state.query.strip())
 
 
 # ---------------------------------------------------------------------------
-# LANDING STATE
+# Big hero — landing only
 # ---------------------------------------------------------------------------
 if not has_query:
     st.markdown(
@@ -512,22 +514,47 @@ if not has_query:
         '</div>',
         unsafe_allow_html=True,
     )
-    # Center the input
-    left, mid, right = st.columns([1, 3, 1])
+
+
+# ---------------------------------------------------------------------------
+# Search bar row — SAME single input widget in both states.
+# Only its surrounding layout changes. Using one widget with one key across
+# both states means Streamlit can never render two copies at once.
+# ---------------------------------------------------------------------------
+wrap_class = "why-searchwrap-results" if has_query else "why-searchwrap-landing"
+
+if has_query:
+    c_brand, c_input, _c_pad = st.columns([2, 6, 1])
+    with c_brand:
+        st.markdown(
+            '<div class="why-header-row"><div class="why-brand-mini"><em>WHY</em> search</div></div>',
+            unsafe_allow_html=True,
+        )
+    input_container = c_input
+    top_margin = "margin-top:14px;"
+else:
+    _l, input_container, _r = st.columns([1, 3, 1])
+    top_margin = ""
+
+with input_container:
+    st.markdown(f'<div class="{wrap_class}" style="{top_margin}">', unsafe_allow_html=True)
+    c_field, c_gear = st.columns([10, 1])
+    with c_field:
+        st.text_input(
+            "search",
+            placeholder="Ask anything — try 'conversational search' or 'vector database'",
+            label_visibility="collapsed",
+            key="_search_input",
+            on_change=_submit_query,
+        )
+    with c_gear:
+        _render_filter_popover("main")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+if not has_query:
+    # Stats line under the landing input
+    _l, mid, _r = st.columns([1, 3, 1])
     with mid:
-        st.markdown('<div class="why-searchwrap-landing">', unsafe_allow_html=True)
-        c_input, c_gear = st.columns([10, 1])
-        with c_input:
-            st.text_input(
-                "search",
-                placeholder="Ask anything — try 'conversational search' or 'vector database'",
-                label_visibility="collapsed",
-                key="_input_landing",
-                on_change=_submit_query_landing,
-            )
-        with c_gear:
-            _render_filter_popover("landing")
-        st.markdown('</div>', unsafe_allow_html=True)
         st.markdown(
             f"<div style='text-align:center;color:var(--why-muted);"
             f"font-size:0.82rem;margin-top:14px;'>"
@@ -538,31 +565,6 @@ if not has_query:
             unsafe_allow_html=True,
         )
     st.stop()
-
-
-# ---------------------------------------------------------------------------
-# RESULTS STATE — logo + search bar in one row
-# ---------------------------------------------------------------------------
-c_brand, c_input, c_spacer = st.columns([2, 6, 1])
-with c_brand:
-    st.markdown(
-        '<div class="why-header-row"><div class="why-brand-mini"><em>WHY</em> search</div></div>',
-        unsafe_allow_html=True,
-    )
-with c_input:
-    st.markdown('<div class="why-searchwrap-results" style="margin-top:14px;">', unsafe_allow_html=True)
-    r_input, r_gear = st.columns([10, 1])
-    with r_input:
-        st.text_input(
-            "search",
-            value=state.query,
-            label_visibility="collapsed",
-            key="_input_results",
-            on_change=_submit_query_results,
-        )
-    with r_gear:
-        _render_filter_popover("results")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Run search(es)
 src_filter = {"Both": None, "Papers": "paper", "Repos": "repo"}[state.source_choice]
